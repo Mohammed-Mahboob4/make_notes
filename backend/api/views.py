@@ -71,16 +71,14 @@ def text_query_view(request):
                 # Initialize parameters
                 parameters = {}
                 
-                # Loop through output contexts to find 'createnote-followup'
-                for context in query_result.output_contexts:
+                # Loop through output contexts to find 'createnote-followup' and 'deletenote-followup'
+                followup_contexts = [ctx for ctx in query_result.output_contexts if 'followup' in ctx.name]
+                for context in followup_contexts:
                     if "createnote-followup" in context.name:
-                        #parameters = context.parameters  # Directly access parameters
-                        parameters = {key: context.parameters[key] for key in context.parameters if key in ["Title", "Content"]}
-                        break
+                        parameters = {key: context.parameters[key] for key in ["Title", "Content"] if key in context.parameters}
                     elif "deletenote-followup" in context.name:
-                        # Extract parameters for "deletenote-followup"
-                        parameters = {key: context.parameters[key] for key in context.parameters if key in ["Title"]}
-                        break
+                        parameters = {key: context.parameters[key] for key in ["Title"] if key in context.parameters}
+
                 
                 res_obj = {
                     
@@ -93,7 +91,7 @@ def text_query_view(request):
 
             else:
                 res_obj = {"error": "No response from Dialogflow"}
-
+            print(query_result)
             # Return the response as a JSON response
             return JsonResponse(res_obj)
 

@@ -296,3 +296,37 @@
 .chatbot-send-button {
     font-size: var(--font-small);
 }
+
+.custom-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin: 10px 0;
+  }
+  
+  .action-button {
+    padding: 10px 20px;
+    border: none;
+    background-color: #007bff;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  
+  .action-button:hover {
+    background-color: #0056b3;
+  }
+  
+  .material-icons.add_circle {
+    color: green;
+  }
+  
+  .material-icons.remove_circle {
+    color: red;
+  }
+  
