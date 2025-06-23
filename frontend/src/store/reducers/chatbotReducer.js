@@ -5,32 +5,54 @@ const initialState = {
 };
 
 const chatbotReducer = (state = initialState, action) => {
-    switch (action.type) {
-      case UPDATE_MESSAGES: {
-        const message = {
-          speak: "bot",
-          text: action.data?.fulfillmentText || "No response received.",
-          intentName: action.data?.intentName || null, // Add intentName
-          parameters: action.data?.parameters || {}, // Add parameters
-        };
-        return {
-          ...state,
-          messages: [...state.messages, message],
-        };
-      }
-      case UPDATE_USER_MESSAGE: {
-        const userMessage = {
-          speak: "user",
-          text: action.data?.text || "No message.",
-        };
-        return {
-          ...state,
-          messages: [...state.messages, userMessage],
-        };
-      }
-      default:
-        return state;
-    }
+  switch (action.type) {
+    case UPDATE_MESSAGES: {
+  const { fulfillmentText, intentName, richContent } = action.data;
+
+  // Avoid adding empty bot messages
+  const isTextValid = fulfillmentText && fulfillmentText.trim() !== "";
+  const isRichContentValid = richContent && richContent.length > 0;
+
+  // Prevent duplicates and blanks
+  if (!isTextValid && !isRichContentValid) return state;
+
+  // Combine message into a single message if both exist
+  const message = {
+    speak: "bot",
+    text: isTextValid ? fulfillmentText : null,
+    intentName: intentName || null,
+    richContent: isRichContentValid ? richContent : null
   };
-  
-  export default chatbotReducer;  
+
+  return {
+    ...state,
+    messages: [...state.messages, message],
+  };
+}
+
+    case UPDATE_USER_MESSAGE: {
+      const userText = action.data?.text?.trim();
+
+  // Skip if empty
+  if (!userText) return state;
+
+  const userMessage = {
+    speak: "user",
+    text: userText,
+  };
+
+  return {
+    ...state,
+    messages: [...state.messages, userMessage],
+  };
+    }
+
+    case "ADD_RICH_CONTENT":
+      return state;
+      
+    default:
+      return state;
+  }
+};
+
+export default chatbotReducer;

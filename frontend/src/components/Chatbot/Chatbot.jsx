@@ -2,24 +2,29 @@ import React, { useState, useEffect, useRef } from 'react';
 import './Chatbot.css';
 import { useDispatch, useSelector } from 'react-redux';
 import * as chatbotActions from "../../store/actions/chatbotAction";
-import { createNote, fetchNotes, fetchNotesByTitleAndDelete } from "../../store/actions/notesAction.js"; // Import fetchNotes
+import { createNote, fetchNotes, fetchNotesByTitleAndDelete } from "../../store/actions/notesAction.js";
 import Messages from './Messages.jsx';
+import RichContent from './RichContent.jsx'; // moved to a separate file
+import { textQueryAction } from "../../store/actions/chatbotAction";
+
 
 const Chatbot = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [query, setQuery] = useState('');
   const dispatch = useDispatch();
-
-  // Retrieve messages from Redux store
   const messages = useSelector(state => state.chatbot.messages);
-
-  // Reference for the chatbot body (messages container)
   const messagesEndRef = useRef(null);
+  const startedRef = useRef(false);
 
-  // Function to toggle chatbot visibility
   const toggleChatbot = () => setIsVisible(!isVisible);
 
-  // Handle user input query
+  useEffect(() => {
+    if (!startedRef.current && messages.length === 0) {
+      startedRef.current = true;
+      dispatch(textQueryAction({ text: "Hi", system: true })); // You can handle "start" in Dialogflow
+    }
+  }, [dispatch, messages.length]);
+
   const handleUserQuery = async () => {
     if (!query.trim()) {
       alert("Please enter a valid query.");
@@ -34,81 +39,16 @@ const Chatbot = () => {
     setQuery('');
   };
 
-  // Function to handle intents and make API call if necessary
-  const handleIntent = (intent, parameters) => {
-    console.log("Detected intent:", intent);
-    console.log("Parameters:", parameters);
-  
-    if (intent === "createNote" && Object.keys(parameters).length > 0) {
-      const { Content, Title } = parameters;
-      if (Title && Content) {
-        dispatch(createNote(Title, Content))
-          .then(() => {
-            alert("Note created successfully!");
-            dispatch(fetchNotes());
-          })
-          .catch((error) => {
-            console.error("Error creating note:", error);
-            alert("Failed to create note. Please try again.");
-          });
-      } 
-    } else if (intent === "deleteNote" && parameters.Title) {
-      const { Title } = parameters;
-  
-      // Use fetchNotesByTitleAndDelete directly
-      dispatch(fetchNotesByTitleAndDelete(Title))
-        .then(() => {
-          // alert(`Note with title "${Title}" deleted successfully!`);
-        })
-        .catch((error) => {
-          console.error("Error deleting note:", error);
-          alert("Failed to delete note. Please try again.");
-        });
-    } 
-    
-  };
-  
-  // Function to handle bot responses and detect intents
-  const handleBotResponse = ({ intentName, parameters }) => {
-    console.log("handleBotResponse called with:", { intentName, parameters });
-    if (intentName) {
-      handleIntent(intentName, parameters || {});
-    } else {
-      console.log("No intentName in response:", { intentName, parameters });
-    }
-  };
-
-  // Scroll to the bottom of the messages
+  // Auto-scroll
   useEffect(() => {
-    if (messagesEndRef.current && messages.length > 0) {
-      const latestMessage = messages[messages.length - 1];
-  
-      // Check if the latest message is from the bot
-      if (latestMessage.speak === "bot") {
-        messagesEndRef.current.scrollTo({
-          top: messagesEndRef.current.scrollHeight,
-          behavior: "smooth", // Enables smooth scrolling
-        });
-      }
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollTo({
+        top: messagesEndRef.current.scrollHeight,
+        behavior: "smooth",
+      });
     }
   }, [messages]);
 
-  // Assuming you get the response after dispatching text query action
-  useEffect(() => {
-    if (messages.length > 0) {
-      const latestMessage = messages[messages.length - 1];
-      
-      // Check if the message is from the bot and contains intentName
-      if (latestMessage.speak === "bot" && latestMessage.intentName) {
-        handleBotResponse({
-          intentName: latestMessage.intentName,
-          parameters: latestMessage.parameters,
-        });
-      }
-    }
-  }, [messages]);
-
-  
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -121,15 +61,23 @@ const Chatbot = () => {
       <button className="circle-button" onClick={toggleChatbot}>
         <span className="button-icon">{isVisible ? '❌' : '💬'}</span>
       </button>
-
       <div className={`chatbot ${isVisible ? 'visible' : ''}`}>
         <div className="chatbot-header">
           <h3>Chatbot</h3>
-          <button className="close-button" onClick={toggleChatbot}> ✖
-          </button>
+          <button className="close-button" onClick={toggleChatbot}>✖</button>
         </div>
+
         <div className="chatbot-body" ref={messagesEndRef}>
-          <Messages key="messages" messages={messages} />
+          <div className="messages-scroll">
+            <Messages key="messages" messages={messages} />
+          </div>
+          {messages.length > 0 && messages[messages.length - 1].richContent && (
+            <div className="message-df rich-wrapper">
+              <div className="messages-rich">
+                <RichContent richContent={messages[messages.length - 1].richContent} />
+              </div>
+            </div>
+          )}
         </div>
         <div className="chatbot-footer">
           <input
@@ -148,4 +96,3 @@ const Chatbot = () => {
 };
 
 export default Chatbot;
-
